@@ -1,0 +1,67 @@
+services:
+  payments-service:
+    build:
+      context: .
+      dockerfile: docker/payments-service.Dockerfile
+      args:
+        SERVICE_VERSION: ${PAYMENTS_SERVICE_VERSION:-v1}
+    image: sre-agent/payments-service:${PAYMENTS_SERVICE_VERSION:-v1}
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  orders-service:
+    build:
+      context: .
+      dockerfile: docker/orders-service.Dockerfile
+      args:
+        SERVICE_VERSION: ${ORDERS_SERVICE_VERSION:-v1}
+    image: sre-agent/orders-service:${ORDERS_SERVICE_VERSION:-v1}
+    environment:
+      PAYMENTS_SERVICE_URL: http://payments-service:8000
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      payments-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: docker/api-gateway.Dockerfile
+      args:
+        SERVICE_VERSION: ${API_GATEWAY_VERSION:-v1}
+    image: sre-agent/api-gateway:${API_GATEWAY_VERSION:-v1}
+    ports:
+      - "8000:8000"
+    environment:
+      ORDERS_SERVICE_URL: http://orders-service:8000
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      orders-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  load-generator:
+    build:
+      context: .
+      dockerfile: docker/load-generator.Dockerfile
+    environment:
+      TARGET_URL: http://api-gateway:8000
+    depends_on:
+      api-gateway:
+        condition: service_healthy

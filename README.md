@@ -8,9 +8,15 @@ An agent that diagnoses injected incidents in a toy system, writes an RCA, and r
 
 You need:
 
-- [uv](https://docs.astral.sh/uv/)
+- [uv](https://docs.astral.sh/uv/) (manages the Python 3.13 toolchain too)
 - pre-commit: `uv tool install pre-commit==4.7.0` (the version CI uses; bump both together)
 - shellcheck: `brew install shellcheck`, or `uv tool install shellcheck-py`
+
+Install the Python dependencies:
+
+```sh
+uv sync
+```
 
 Then install the hooks for both the `pre-commit` and `commit-msg` stages:
 

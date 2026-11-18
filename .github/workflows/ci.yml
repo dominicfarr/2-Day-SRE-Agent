@@ -49,6 +49,8 @@ jobs:
       # A SvelteKit project also runs `npx --no-install svelte-kit sync` right
       # after `npm ci --ignore-scripts`: the skipped `prepare` script would
       # have done it, and svelte-check fails without the .svelte-kit/ it makes.
+      - name: Install Python dependencies
+        run: uv sync --locked --no-build
       # --- END OF EXTENSION POINT -----------------------------------------
 
       - name: All pre-commit hooks on every file
@@ -92,4 +94,14 @@ jobs:
       # the tests, then build once and upload the build as an artifact. The
       # toolchain and install are already done by the extension point above.
       # See docs/DEVELOPMENT.md.
+      - name: Run tests
+        run: uv run --locked pytest -q
+
+      - name: Build
+        run: uv build
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist/
       # --- END OF EXTENSION POINT -----------------------------------------
